@@ -1,4 +1,26 @@
 import puppeteer from "puppeteer";
+import ExcelJS from "exceljs";
+
+const saveExcel = async (data) => {
+  try {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("LinkedIn Links");
+
+    worksheet.columns = [
+      { header: "Name", key: "name", width: 30 },
+      { header: "LinkedIn Link", key: "linkedinLink", width: 50 },
+    ];
+
+    data.forEach((item) => {
+      worksheet.addRow({ name: item.name, linkedinLink: item.linkedinLink });
+    });
+
+    await workbook.xlsx.writeFile("linkedin_links.xlsx");
+    console.log("Excel file created successfully!");
+  } catch (error) {
+    console.log("Error writing Excel file:", error);
+  }
+};
 
 async function openBrowser() {
   const browser = await puppeteer.launch({
@@ -9,32 +31,36 @@ async function openBrowser() {
 
   // Evaluar la página para extraer los enlaces
   const allLinks = await page.evaluate(() => {
-    // Seleccionar todos los elementos que cumplen con los criterios
     const elements = document.querySelectorAll(".row .col-6.col-md-2 a.w-100");
-
-    // Extraer los href de cada enlace
     const links = Array.from(elements).map((el) => el.href);
-
     return links;
   });
 
-  for (const link of allLinks) {
+  let data = [];
+
+  // Limitar a 2 elementos
+  const limitedLinks = allLinks.slice(0, 2);
+
+  for (const link of limitedLinks) {
     await page.goto(link);
 
     const linkedinLink = await page.evaluate(() => {
-      // Seleccionar todos los elementos con la clase "social-item" que contienen enlaces
       const socialElements = document.querySelectorAll(".social-item a");
-
-      // Buscar el enlace que contenga "linkedin.com" en su href
       const linkedinElement = Array.from(socialElements).find((el) => el.href.includes("linkedin.com"));
-
       return linkedinElement ? linkedinElement.href : null;
     });
 
-    console.log(`LinkedIn link on ${link}: ${linkedinLink}`);
+    if (!linkedinLink) continue;
+
+    const cleanedLink = linkedinLink.endsWith("/") ? linkedinLink.slice(0, -1) : linkedinLink;
+    const name = cleanedLink.split("/").pop().split("?")[0];
+
+    data.push({ name, linkedinLink });
+    console.log({ name, linkedinLink });
   }
 
   await browser.close();
+  await saveExcel(data);
 }
 
 openBrowser();
