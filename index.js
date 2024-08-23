@@ -15,7 +15,7 @@ const saveExcel = async (data) => {
       worksheet.addRow({ name: item.name, linkedinLink: item.linkedinLink });
     });
 
-    await workbook.xlsx.writeFile("linkedin_links.xlsx");
+    await workbook.xlsx.writeFile("linkedin_links6.xlsx");
     console.log("Excel file created successfully!");
   } catch (error) {
     console.log("Error writing Excel file:", error);
@@ -39,7 +39,7 @@ async function openBrowser() {
   let data = [];
 
   // Limitar a 2 elementos
-  const limitedLinks = allLinks.slice(0, 2);
+  const limitedLinks = allLinks.slice(400, 600);
 
   for (const link of limitedLinks) {
     await page.goto(link);
